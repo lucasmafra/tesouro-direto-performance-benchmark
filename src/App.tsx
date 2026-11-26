@@ -1,11 +1,12 @@
-import { RotateCw, Upload } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { RotateCw } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { CohortDrawer } from './components/CohortDrawer';
 import { CohortsTable } from './components/CohortsTable';
 import { ComparativeCharts } from './components/ComparativeCharts';
 import { HistoricalSeriesView } from './components/HistoricalSeriesView';
 import { KpiStrip } from './components/KpiStrip';
 import { MethodologyView } from './components/MethodologyView';
+import { MotivationView } from './components/MotivationView';
 import { ResultExplanationSection } from './components/ResultExplanationSection';
 import type {
   BacktestCatalogResponse,
@@ -15,10 +16,9 @@ import type {
   MarketSeriesRow,
   SimulationParams,
 } from './types/backtest';
-import { parseCohortsCsv } from './utils/csvParser';
 import { formatBRL, formatPct, formatWindowLabel } from './utils/formatters';
 
-type TabKey = 'comparativo' | 'tabela' | 'serie' | 'metodologia';
+type TabKey = 'comparativo' | 'tabela' | 'serie' | 'metodologia' | 'motivacao';
 type ValueMode = 'nominal' | 'real';
 
 export default function App() {
@@ -31,7 +31,6 @@ export default function App() {
   const [loadingBacktest, setLoadingBacktest] = useState(true);
   const [backtestError, setBacktestError] = useState<string | null>(null);
 
-  const [customCsvName, setCustomCsvName] = useState<string | null>(null);
   const [selectedCohort, setSelectedCohort] = useState<CohortRow | null>(null);
 
   const [seriesRows, setSeriesRows] = useState<MarketSeriesRow[]>([]);
@@ -42,8 +41,6 @@ export default function App() {
   const [explanation, setExplanation] = useState<BacktestExplanationResponse | null>(null);
   const [loadingExplanation, setLoadingExplanation] = useState(false);
   const [explanationError, setExplanationError] = useState<string | null>(null);
-
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const loadExplanation = useCallback(async (win: number) => {
     setLoadingExplanation(true);
@@ -75,7 +72,6 @@ export default function App() {
       const data = (await res.json()) as BacktestWindowResponse;
       setCohorts(data.cohorts);
       setSelectedWindow(win);
-      setCustomCsvName(null);
       setSelectedCohort(null);
       void loadExplanation(win);
     } catch (err) {
@@ -147,36 +143,6 @@ export default function App() {
     }
   }, [activeTab, seriesLoaded, loadingSeries, loadSeries]);
 
-  const handleUploadCsv = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const text = String(reader.result || '');
-        const parsed = parseCohortsCsv<CohortRow>(text);
-        if (parsed.length === 0 || !parsed[0].mes_entrada || !parsed[0].eua_brl_liquido) {
-          setBacktestError(
-            'Arquivo CSV inválido. Selecione um arquivo backtest_coortes_<N>m.csv gerado por simular_backtest.py.',
-          );
-          return;
-        }
-        const parsedWindow = parsed[0].janela_meses || selectedWindow || 120;
-        setCohorts(parsed);
-        setSelectedWindow(parsedWindow);
-        setCustomCsvName(file.name);
-        setBacktestError(null);
-        setSelectedCohort(null);
-        void loadExplanation(parsedWindow);
-      } catch (err) {
-        setBacktestError((err as Error).message);
-      }
-    };
-    reader.readAsText(file, 'utf-8');
-    event.target.value = '';
-  };
-
   const params: SimulationParams | null = catalog?.parametros ?? null;
   const initialDeposit = params?.aporte_inicial_brl ?? 1000;
   const activeWindow = selectedWindow ?? 120;
@@ -193,6 +159,7 @@ export default function App() {
             {(
               [
                 { id: 'comparativo', label: 'Visão Comparativa' },
+                { id: 'motivacao', label: 'Motivação' },
                 { id: 'tabela', label: 'Tabela de Coortes' },
                 { id: 'serie', label: 'Série Histórica' },
                 { id: 'metodologia', label: 'Metodologia' },
@@ -215,24 +182,6 @@ export default function App() {
               );
             })}
           </nav>
-
-          <div className="shrink-0">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              onChange={handleUploadCsv}
-              className="hidden"
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2 text-xs font-medium bg-blue-700 text-white hover:bg-blue-800 transition-colors whitespace-nowrap shrink-0 inline-flex items-center gap-2 cursor-pointer"
-            >
-              <Upload className="w-3.5 h-3.5" />
-              <span>Carregar CSV</span>
-            </button>
-          </div>
         </div>
       </header>
 
@@ -243,7 +192,7 @@ export default function App() {
               <>
                 <div className="flex items-center gap-1 p-1 bg-slate-100">
                   {(catalog?.windows ?? []).map((win) => {
-                    const isActive = !customCsvName && selectedWindow === win;
+                    const isActive = selectedWindow === win;
                     return (
                       <button
                         key={win}
@@ -259,11 +208,6 @@ export default function App() {
                       </button>
                     );
                   })}
-                  {customCsvName && (
-                    <span className="px-3 py-1 text-xs font-mono text-blue-700 bg-white shadow-xs whitespace-nowrap">
-                      Arquivo: {customCsvName}
-                    </span>
-                  )}
                 </div>
 
                 <div className="flex items-center gap-1 p-1 bg-slate-100">
@@ -304,6 +248,12 @@ export default function App() {
                 Documentação fixa das equações financeiras, convenções tributárias e fontes de dados
               </div>
             )}
+
+            {activeTab === 'motivacao' && (
+              <div className="text-xs text-slate-600">
+                Contexto macroeconômico e pergunta central sobre a tese de dolarização do patrimônio
+              </div>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
@@ -317,7 +267,7 @@ export default function App() {
                 {formatPct((params.spread_cambio_entrada ?? 0.01) * 100, 1)}
               </span>
             )}
-            {activeTab !== 'metodologia' && (
+            {activeTab !== 'metodologia' && activeTab !== 'motivacao' && (
               <button
                 type="button"
                 onClick={() => {
@@ -355,8 +305,7 @@ export default function App() {
                   Nenhum CSV de backtest encontrado em resultados/
                 </h2>
                 <p className="text-sm text-slate-600">
-                  Execute os scripts Python no terminal para gerar os arquivos de simulação ou use o
-                  botão <strong>Carregar CSV</strong> acima.
+                  Execute os scripts Python no terminal para gerar os arquivos de simulação.
                 </p>
                 <div className="font-mono text-xs bg-slate-50 border border-slate-200 p-3 text-slate-800">
                   python3 coletar_dados.py &amp;&amp; python3 simular_backtest.py --janelas 60 120
@@ -405,13 +354,15 @@ export default function App() {
         )}
 
         {activeTab === 'metodologia' && <MethodologyView parametros={params} />}
+
+        {activeTab === 'motivacao' && <MotivationView />}
       </main>
 
       <CohortDrawer
         cohort={selectedCohort}
         windowMonths={activeWindow}
         valueMode={valueMode}
-        hasLocalServerData={!customCsvName}
+        hasLocalServerData={true}
         onClose={() => setSelectedCohort(null)}
       />
     </div>
