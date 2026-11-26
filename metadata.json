@@ -1,0 +1,6 @@
+{
+  "name": "Backtest Tesouro Direto vs US Treasury 10Y",
+  "description": "Scripts Python para coleta única de séries históricas oficiais (2003-presente), backtest em janelas móveis parametrizáveis pela metodologia Damodaran e exportação CSV para Google Sheets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

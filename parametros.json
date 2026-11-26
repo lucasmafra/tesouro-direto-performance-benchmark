@@ -1,0 +1,16 @@
+{
+  "aporte_inicial_brl": 1000.0,
+  "data_inicio": "2003-01",
+  "janela_meses": 120,
+  "ir_brasil_aliquota": 0.15,
+  "custodia_b3_anual": 0.002,
+  "isentar_custodia_selic_ate_10k": true,
+  "iof_entrada": 0.011,
+  "iof_saida": 0.0038,
+  "spread_cambio_entrada": 0.01,
+  "spread_cambio_saida": 0.01,
+  "ir_exterior_aliquota": 0.15,
+  "taxa_custodia_eua_anual": 0.0,
+  "prazo_alvo_anos_damodaran": 10.0,
+  "formato_ptbr": false
+}
