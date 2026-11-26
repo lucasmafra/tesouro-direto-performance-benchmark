@@ -1,5 +1,5 @@
-import { RotateCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { AboutAuthorView } from './components/AboutAuthorView';
 import { CohortDrawer } from './components/CohortDrawer';
 import { CohortsTable } from './components/CohortsTable';
 import { ComparativeCharts } from './components/ComparativeCharts';
@@ -18,7 +18,7 @@ import type {
 } from './types/backtest';
 import { formatBRL, formatPct, formatWindowLabel } from './utils/formatters';
 
-type TabKey = 'comparativo' | 'tabela' | 'serie' | 'metodologia' | 'motivacao';
+type TabKey = 'comparativo' | 'motivacao' | 'tabela' | 'serie' | 'metodologia' | 'autor';
 type ValueMode = 'nominal' | 'real';
 
 export default function App() {
@@ -163,6 +163,7 @@ export default function App() {
                 { id: 'tabela', label: 'Tabela de Coortes' },
                 { id: 'serie', label: 'Série Histórica' },
                 { id: 'metodologia', label: 'Metodologia' },
+                { id: 'autor', label: 'Sobre o autor' },
               ] as const
             ).map((tab) => {
               const isActive = activeTab === tab.id;
@@ -185,8 +186,9 @@ export default function App() {
         </div>
       </header>
 
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-[1440px] mx-auto px-6 py-3 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      {activeTab !== 'autor' && (
+        <div className="bg-white border-b border-slate-200">
+          <div className="max-w-[1440px] mx-auto px-6 py-3 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
             {(activeTab === 'comparativo' || activeTab === 'tabela') && (
               <>
@@ -267,25 +269,10 @@ export default function App() {
                 {formatPct((params.spread_cambio_entrada ?? 0.01) * 100, 1)}
               </span>
             )}
-            {activeTab !== 'metodologia' && activeTab !== 'motivacao' && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (activeTab === 'serie') {
-                    void loadSeries();
-                  } else {
-                    void loadCatalogAndInitial(selectedWindow);
-                  }
-                }}
-                className="inline-flex items-center gap-1.5 text-slate-700 hover:text-blue-700 font-medium whitespace-nowrap shrink-0 cursor-pointer"
-              >
-                <RotateCw className="w-3.5 h-3.5" />
-                <span>Recarregar CSVs</span>
-              </button>
-            )}
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       <main className="max-w-[1440px] w-full mx-auto px-6 py-6 flex-1 space-y-6">
         {(activeTab === 'comparativo' || activeTab === 'tabela') && (
@@ -356,6 +343,8 @@ export default function App() {
         {activeTab === 'metodologia' && <MethodologyView parametros={params} />}
 
         {activeTab === 'motivacao' && <MotivationView />}
+
+        {activeTab === 'autor' && <AboutAuthorView />}
       </main>
 
       <CohortDrawer
